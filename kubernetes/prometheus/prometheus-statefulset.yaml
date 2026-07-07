@@ -5,9 +5,11 @@ metadata:
   namespace: monitoring
   labels:
     app.kubernetes.io/name: prometheus
+
 spec:
   serviceName: prometheus
   replicas: 2
+
   selector:
     matchLabels:
       app.kubernetes.io/name: prometheus
@@ -16,6 +18,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: prometheus
+
     spec:
       serviceAccountName: prometheus
 
@@ -28,7 +31,6 @@ spec:
             - --config.file=/etc/prometheus/prometheus.yml
             - --storage.tsdb.path=/prometheus
             - --storage.tsdb.retention.time=30d
-            - --storage.tsdb.max-block-chunks=500
             - --web.enable-lifecycle
             - --web.enable-admin-api
             - --enable-feature=remote-write-receiver
