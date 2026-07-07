@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: sample-app
-          image: ghcr.io/your-org/sample-app:latest
+          image: sample-app:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
