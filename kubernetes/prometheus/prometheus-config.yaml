@@ -6,6 +6,7 @@ metadata:
   labels:
     app.kubernetes.io/name: prometheus
     app.kubernetes.io/component: server
+
 data:
   prometheus.yml: |
     global:
@@ -18,54 +19,53 @@ data:
     rule_files:
       - /etc/prometheus/rules/*.yml
 
-    remote_write:
-      - url: "http://thanos-receive.monitoring.svc.cluster.local:19291/api/v1/receive"
-        write_relabel_configs:
-          - source_labels: [__name__]
-            regex: '.*'
-            action: keep
-
-    remote_read:
-      - url: "http://thanos-query.monitoring.svc.cluster.local:9090/api/v1/query"
-        read_recent: true
-
     scrape_configs:
-      - job_name: 'kubernetes-nodes'
+      - job_name: "prometheus"
+        static_configs:
+          - targets:
+              - localhost:9090
+
+      - job_name: "kubernetes-nodes"
         kubernetes_sd_configs:
           - role: node
         relabel_configs:
           - source_labels: [__address__]
-            regex: '([^:]+)(?::\d+)?'
+            regex: "([^:]+)(?::\\d+)?"
             target_label: __address__
-            replacement: '${1}:9100'
+            replacement: "${1}:9100"
 
-      - job_name: 'kubernetes-pods'
+      - job_name: "kubernetes-pods"
         kubernetes_sd_configs:
           - role: pod
         relabel_configs:
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
             action: keep
-            regex: true
+            regex: "true"
+
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
             action: replace
             target_label: __metrics_path__
             regex: (.+)
+
           - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
             action: replace
-            regex: ([^:]+)(?::\d+)?;(\d+)
-            replacement: $1:$2
+            regex: "([^:]+)(?::\\d+)?;(\\d+)"
+            replacement: "$1:$2"
             target_label: __address__
 
-      - job_name: 'go-app'
+      - job_name: "go-app"
         kubernetes_sd_configs:
           - role: pod
         relabel_configs:
           - source_labels: [__meta_kubernetes_namespace]
-            action: replace
             target_label: namespace
+
           - source_labels: [__meta_kubernetes_pod_name]
-            action: replace
             target_label: pod
+
           - source_labels: [__meta_kubernetes_pod_container_name]
-            action: replace
             target_label: container
+
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: "true"
