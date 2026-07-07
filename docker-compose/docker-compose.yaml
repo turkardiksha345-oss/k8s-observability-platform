@@ -1,0 +1,15 @@
+version: '3.9'
+services:
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    ports:
+      - "9090:9090"
+  thanos:
+    image: quay.io/thanos/thanos:v0.35.1
+    command: ["query", "--http-address=0.0.0.0:10902", "--grpc-address=0.0.0.0:10901"]
+    ports:
+      - "10902:10902"
+  grafana:
+    image: grafana/grafana:11.1.0
+    ports:
+      - "3000:3000"

@@ -1,0 +1,13 @@
+type: s3
+config:
+  bucket: "your-metrics-bucket"
+  endpoint: "s3.us-east-1.amazonaws.com"
+  region: "us-east-1"
+  access_key: "YOUR_AWS_ACCESS_KEY"
+  secret_key: "YOUR_AWS_SECRET_KEY"
+  insecure: false
+  signature_version2: false
+  put_user_metadata: {}
+  part_size: 134217728
+  sse_config:
+    type: "SSE-S3"

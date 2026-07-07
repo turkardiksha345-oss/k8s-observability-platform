@@ -1,0 +1,26 @@
+prometheus:
+  replicaCount: 2
+  retention: 30d
+  storageSize: 50Gi
+thanos:
+  sidecar:
+    replicaCount: 2
+  query:
+    replicaCount: 1
+  storeGateway:
+    replicaCount: 1
+  compactor:
+    enabled: true
+  bucketWeb:
+    enabled: true
+grafana:
+  adminUser: admin
+  adminPassword: admin
+  service:
+    type: ClusterIP
+sampleApp:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/your-org/sample-app
+    tag: latest
+    pullPolicy: IfNotPresent
