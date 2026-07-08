@@ -7,5 +7,5 @@ variable "aws_region" {
 variable "bucket_name" {
   description = "Globally unique S3 bucket name for Thanos object storage"
   type        = string
-  default     = "thanos-metrics-prod-bucket"
+  default     = "thanos-metrics-prod-bucket-1"
 }
