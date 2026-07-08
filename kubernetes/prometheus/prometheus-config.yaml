@@ -8,13 +8,15 @@ metadata:
     app.kubernetes.io/component: server
 
 data:
-  prometheus.yml: |
+  prometheus.yml.tpl: |
     global:
       scrape_interval: 15s
       evaluation_interval: 15s
+
       external_labels:
         cluster: kind-or-eks
         environment: production
+        replica: ${POD_NAME}
 
     rule_files:
       - /etc/prometheus/rules/*.yml
@@ -29,6 +31,7 @@ data:
       - job_name: "kubernetes-nodes"
         kubernetes_sd_configs:
           - role: node
+
         relabel_configs:
           - source_labels: [__address__]
             regex: "([^:]+)(?::\\d+)?"
@@ -38,6 +41,7 @@ data:
       - job_name: "kubernetes-pods"
         kubernetes_sd_configs:
           - role: pod
+
         relabel_configs:
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
             action: keep
@@ -59,6 +63,7 @@ data:
           - role: pod
 
         relabel_configs:
+
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
             action: keep
             regex: "true"

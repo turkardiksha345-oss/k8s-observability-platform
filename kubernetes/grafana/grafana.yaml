@@ -25,8 +25,8 @@ spec:
           imagePullPolicy: IfNotPresent
 
           ports:
-            - containerPort: 3000
-              name: http
+            - name: http
+              containerPort: 3000
 
           env:
             - name: GF_SECURITY_ADMIN_USER
@@ -51,9 +51,16 @@ spec:
             - name: grafana-storage
               mountPath: /var/lib/grafana
 
+            - name: grafana-datasources
+              mountPath: /etc/grafana/provisioning/datasources
+
       volumes:
         - name: grafana-storage
           emptyDir: {}
+
+        - name: grafana-datasources
+          configMap:
+            name: grafana-datasources
 
 ---
 apiVersion: v1
