@@ -5,39 +5,60 @@ metadata:
   namespace: monitoring
   labels:
     app.kubernetes.io/name: thanos-store-gateway
+
 spec:
   replicas: 1
+
   selector:
     matchLabels:
       app.kubernetes.io/name: thanos-store-gateway
+
   template:
     metadata:
       labels:
         app.kubernetes.io/name: thanos-store-gateway
+
     spec:
       containers:
-        - name: store-gateway
+        - name: thanos-store-gateway
           image: quay.io/thanos/thanos:v0.35.1
+          imagePullPolicy: IfNotPresent
+
           args:
             - store
-            - --http-address=0.0.0.0:10902
-            - --grpc-address=0.0.0.0:10901
             - --data-dir=/var/thanos/store
             - --objstore.config-file=/etc/thanos/object-store.yaml
+            - --grpc-address=0.0.0.0:10901
+            - --http-address=0.0.0.0:10902
+
           ports:
-            - name: http
-              containerPort: 10902
             - name: grpc
               containerPort: 10901
+
+            - name: http
+              containerPort: 10902
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
           volumeMounts:
             - name: objstore-config
               mountPath: /etc/thanos
+              readOnly: true
+
             - name: data
               mountPath: /var/thanos/store
+
       volumes:
         - name: objstore-config
           secret:
             secretName: thanos-objstore-config
+
         - name: data
           emptyDir: {}
 ---
@@ -46,13 +67,20 @@ kind: Service
 metadata:
   name: thanos-store-gateway
   namespace: monitoring
+  labels:
+    app.kubernetes.io/name: thanos-store-gateway
+
 spec:
+  type: ClusterIP
+
+  selector:
+    app.kubernetes.io/name: thanos-store-gateway
+
   ports:
-    - name: http
-      port: 10902
-      targetPort: http
     - name: grpc
       port: 10901
       targetPort: grpc
-  selector:
-    app.kubernetes.io/name: thanos-store-gateway
+
+    - name: http
+      port: 10902
+      targetPort: http
