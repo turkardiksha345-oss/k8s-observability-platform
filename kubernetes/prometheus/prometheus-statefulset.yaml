@@ -22,60 +22,111 @@ spec:
     spec:
       serviceAccountName: prometheus
 
-      # Added security context
       securityContext:
         runAsUser: 65534
         runAsGroup: 65534
         fsGroup: 65534
 
       containers:
-        - name: prometheus
-          image: prom/prometheus:v2.54.1
-          imagePullPolicy: IfNotPresent
 
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false
+      ##########################
+      # Prometheus Container
+      ##########################
 
-          args:
-            - --config.file=/etc/prometheus/prometheus.yml
-            - --storage.tsdb.path=/prometheus
-            - --storage.tsdb.retention.time=30d
-            - --web.enable-lifecycle
-            - --web.enable-admin-api
-            - --enable-feature=remote-write-receiver
+      - name: prometheus
+        image: prom/prometheus:v2.54.1
+        imagePullPolicy: IfNotPresent
 
-          ports:
-            - name: web
-              containerPort: 9090
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
 
-          volumeMounts:
-            - name: config
-              mountPath: /etc/prometheus
+        args:
+          - --config.file=/etc/prometheus/prometheus.yml
+          - --storage.tsdb.path=/prometheus
+          - --storage.tsdb.retention.time=30d
+          - --web.enable-lifecycle
+          - --web.enable-admin-api
+          - --web.enable-remote-write-receiver
 
-            - name: data
-              mountPath: /prometheus
+        ports:
+          - name: web
+            containerPort: 9090
 
-          resources:
-            requests:
-              cpu: 500m
-              memory: 1Gi
-            limits:
-              cpu: "1"
-              memory: 2Gi
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: "1"
+            memory: 2Gi
+
+        volumeMounts:
+          - name: config
+            mountPath: /etc/prometheus
+
+          - name: data
+            mountPath: /prometheus
+
+      ##########################
+      # Thanos Sidecar
+      ##########################
+
+      - name: thanos-sidecar
+        image: quay.io/thanos/thanos:v0.35.1
+        imagePullPolicy: IfNotPresent
+
+        args:
+          - sidecar
+          - --prometheus.url=http://localhost:9090
+          - --tsdb.path=/prometheus
+          - --grpc-address=0.0.0.0:10901
+          - --http-address=0.0.0.0:10902
+          - --objstore.config-file=/etc/thanos/object-store.yaml
+
+        ports:
+          - name: grpc
+            containerPort: 10901
+
+          - name: http
+            containerPort: 10902
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+        volumeMounts:
+          - name: data
+            mountPath: /prometheus
+
+          - name: objstore-config
+            mountPath: /etc/thanos
+            readOnly: true
 
       volumes:
+
         - name: config
           configMap:
             name: prometheus-config
 
+        - name: objstore-config
+          secret:
+            secretName: thanos-objstore-config
+
   volumeClaimTemplates:
     - metadata:
         name: data
+
       spec:
         accessModes:
           - ReadWriteOnce
+
         storageClassName: gp2
+
         resources:
           requests:
             storage: 10Gi
