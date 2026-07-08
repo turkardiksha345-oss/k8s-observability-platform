@@ -29,86 +29,88 @@ spec:
 
       containers:
 
-      ##########################
-      # Prometheus Container
-      ##########################
+        # -------------------------
+        # Prometheus
+        # -------------------------
+        - name: prometheus
+          image: prom/prometheus:v2.54.1
+          imagePullPolicy: IfNotPresent
 
-      - name: prometheus
-        image: prom/prometheus:v2.54.1
-        imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
 
-        securityContext:
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: false
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --storage.tsdb.retention.time=30d
 
-        args:
-          - --config.file=/etc/prometheus/prometheus.yml
-          - --storage.tsdb.path=/prometheus
-          - --storage.tsdb.retention.time=30d
-          - --web.enable-lifecycle
-          - --web.enable-admin-api
-          - --web.enable-remote-write-receiver
+            # Required for Thanos Sidecar
+            - --storage.tsdb.min-block-duration=2h
+            - --storage.tsdb.max-block-duration=2h
 
-        ports:
-          - name: web
-            containerPort: 9090
+            - --web.enable-lifecycle
+            - --web.enable-admin-api
+            - --web.enable-remote-write-receiver
 
-        resources:
-          requests:
-            cpu: 500m
-            memory: 1Gi
-          limits:
-            cpu: "1"
-            memory: 2Gi
+          ports:
+            - name: web
+              containerPort: 9090
 
-        volumeMounts:
-          - name: config
-            mountPath: /etc/prometheus
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "1"
+              memory: 2Gi
 
-          - name: data
-            mountPath: /prometheus
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
 
-      ##########################
-      # Thanos Sidecar
-      ##########################
+            - name: data
+              mountPath: /prometheus
 
-      - name: thanos-sidecar
-        image: quay.io/thanos/thanos:v0.35.1
-        imagePullPolicy: IfNotPresent
+        # -------------------------
+        # Thanos Sidecar
+        # -------------------------
+        - name: thanos-sidecar
+          image: quay.io/thanos/thanos:v0.35.1
+          imagePullPolicy: IfNotPresent
 
-        args:
-          - sidecar
-          - --prometheus.url=http://localhost:9090
-          - --tsdb.path=/prometheus
-          - --grpc-address=0.0.0.0:10901
-          - --http-address=0.0.0.0:10902
-          - --objstore.config-file=/etc/thanos/object-store.yaml
+          args:
+            - sidecar
+            - --prometheus.url=http://localhost:9090
+            - --tsdb.path=/prometheus
+            - --grpc-address=0.0.0.0:10901
+            - --http-address=0.0.0.0:10902
+            - --objstore.config-file=/etc/thanos/object-store.yaml
 
-        ports:
-          - name: grpc
-            containerPort: 10901
+          ports:
+            - name: grpc
+              containerPort: 10901
 
-          - name: http
-            containerPort: 10902
+            - name: http
+              containerPort: 10902
 
-        resources:
-          requests:
-            cpu: 100m
-            memory: 128Mi
-          limits:
-            cpu: 500m
-            memory: 512Mi
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
 
-        volumeMounts:
-          - name: data
-            mountPath: /prometheus
+          volumeMounts:
+            - name: data
+              mountPath: /prometheus
 
-          - name: objstore-config
-            mountPath: /etc/thanos
-            readOnly: true
+            - name: objstore-config
+              mountPath: /etc/thanos
+              readOnly: true
 
       volumes:
-
         - name: config
           configMap:
             name: prometheus-config
@@ -120,7 +122,6 @@ spec:
   volumeClaimTemplates:
     - metadata:
         name: data
-
       spec:
         accessModes:
           - ReadWriteOnce
